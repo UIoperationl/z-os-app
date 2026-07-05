@@ -55,41 +55,39 @@ jobs:
       - name: Create or Update Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v1.1.0
-          name: Z-OS v1.1.0 — AI tool fixes + file downloads
+          tag_name: v1.2.0
+          name: Z-OS v1.2.0 — UI customization + AI installs tools + keep-alive
           files: output/z-os.apk
           body: |
-            # Z-OS Android App v1.1.0
+            # Z-OS Android App v1.2.0
 
             ## What's new
-            - AI commands now have 60s timeout (was 8s) — complex operations complete
-            - AI knows what tools are installed (python3, node, ffmpeg, etc.)
-            - AI always verifies its work (runs ls/cat after creating files)
-            - File browser now has download buttons
-            - Better error reporting
+            - AI can install tools itself (pip3, npm, apt-get, curl binaries)
+            - UI Settings panel: theme (dark/light/matrix), accent color, font size, timeout slider
+            - Keep-alive system prevents server from dying when idle
+            - Custom command timeout (10s-300s, default 60s)
+            - File downloads from file browser
 
             ## Installation
             1. Download `z-os.apk` below
             2. On your phone: Settings → Security → enable "Install from unknown sources"
-            3. Open the APK file (from Files app or browser downloads)
-            4. Tap "Install" (may need to allow update over v1.0.0)
+            3. Open the APK file
+            4. Tap "Install" (updates over v1.1.0)
             5. Launch "Z-OS" from app drawer
 
             ## Features
             - Full Z-OS desktop in your pocket
             - Real bash shell (when backend is alive)
-            - AI chat with tools: bash, image gen, TTS, web search
+            - AI chat with FULL tool use: bash, image gen, TTS, web search, tool installation
             - BYOK: use any OpenAI-compatible API
             - Editable system prompt
+            - UI customization: themes, colors, font size, timeout
             - Auto-rotates: portrait = phone mode, landscape = desktop mode
             - Fullscreen immersive (no status bar)
-            - File downloads — click ⬇ next to any file
+            - File downloads
 
             ## Changing the URL
-            Press your phone's Menu button (or Recent Apps button on some devices). A URL bar appears at top. Enter a new URL and tap "Load".
-
-            ## Note
-            Default URL points to the Z-OS sandbox. For 24/7 access, deploy the [web app](https://github.com/UIoperationl/z-os-computer-web) to Vercel and update the URL in the app.
+            Press your phone's Menu button. A URL bar appears at top. Enter a new URL and tap "Load".
 
             ## Built
             Commit: ${{ github.sha }}
