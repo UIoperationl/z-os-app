@@ -55,39 +55,42 @@ jobs:
       - name: Create or Update Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v1.3.0
-          name: Z-OS v1.3.0 — Background resilience + error recovery
+          tag_name: v1.4.0
+          name: Z-OS v1.4.0 — File downloads + foreground service + simpler error handling
           files: output/z-os.apk
           body: |
-            # Z-OS Android App v1.3.0
+            # Z-OS Android App v1.4.0
 
             ## What's new
-            - WakeLock: app keeps CPU running for 30s after you minimize (lets in-flight requests complete)
-            - WebView doesn't pause JS when minimized (fetches continue)
-            - Error recovery page with Retry button if connection drops
-            - Auto-reload on resume if page is blank
-            - Web app: auto-retry failed requests (3 attempts with backoff)
-            - Web app: proper JSON error handling (no more "Unexpected token <")
+            - **File downloads work!** Click ⬇ on any file → Android Download Manager saves it to /Download/Z-OS/
+            - **Foreground service** keeps app alive in background (no more killed requests when minimized)
+            - **WakeLock** prevents CPU sleep while app is running
+            - **Simpler error handling** — no more complex retry loops, just a clean retry button
+            - **WebView doesn't pause** when minimized — JS keeps running
 
             ## Installation
             1. Download `z-os.apk` below
-            2. On your phone: Settings → Security → enable "Install from unknown sources"
-            3. Open the APK file
-            4. Tap "Install" (updates over v1.2.0)
-            5. Launch "Z-OS" from app drawer
+            2. Install it (updates over v1.3.0)
+            3. Launch Z-OS
+            4. You'll see a "Z-OS running in background" notification — that's the foreground service keeping it alive
+            5. To download a file: open File Browser → click ⬇ next to any file
 
             ## Features
             - Full Z-OS desktop in your pocket
-            - Real bash shell (when backend is alive)
-            - AI chat with FULL tool use: bash, image gen, TTS, web search, tool installation
-            - BYOK: use any OpenAI-compatible API
-            - Editable system prompt
-            - UI customization: themes, colors, font size, timeout
-            - Auto-rotates: portrait = phone mode, landscape = desktop mode
-            - Fullscreen immersive (no status bar)
-            - File downloads
-            - Background resilience (minimize app without losing requests)
-            - Auto-retry on network errors
+            - Real bash shell + AI with full tool use
+            - BYOK + editable system prompt
+            - UI customization (themes, colors, font, timeout)
+            - Auto-rotate portrait/landscape
+            - **File downloads** (saves to /Download/Z-OS/)
+            - **Background execution** (foreground service)
+            - Auto-retry button on errors
+
+            ## Permissions
+            - INTERNET, ACCESS_NETWORK_STATE — connect to backend
+            - WAKE_LOCK — keep CPU running
+            - FOREGROUND_SERVICE — stay alive in background
+            - WRITE_EXTERNAL_STORAGE — save downloaded files
+            - POST_NOTIFICATIONS — show background notification
 
             ## Built
             Commit: ${{ github.sha }}
