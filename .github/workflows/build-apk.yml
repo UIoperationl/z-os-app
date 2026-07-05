@@ -17,16 +17,25 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          sdk-platform: 34
+          sdk-build-tools: 34.0.0
+
+      - name: Install Gradle 8.2
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip
+          unzip -q gradle-8.2-bin.zip -d /opt/
+          echo "/opt/gradle-8.2/bin" >> $GITHUB_PATH
+
+      - name: Generate Gradle Wrapper
+        working-directory: android
+        run: gradle wrapper --gradle-version 8.2 --distribution-type bin
 
       - name: Build APK
         working-directory: android
-        run: |
-          # Generate gradle wrapper
-          gradle wrapper --gradle-version 8.2
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Rename APK
         run: |
@@ -69,7 +78,7 @@ jobs:
             Press your phone's Menu button (or Recent Apps button on some devices). A URL bar appears at top. Enter a new URL and tap "Load".
 
             ## Note
-            The app points to the Z-OS sandbox URL by default. This URL is only alive when the chat session is active. For 24/7 access, deploy the [web app](https://github.com/UIoperationl/z-os-computer-web) to Vercel and update the URL in the app.
+            Default URL points to the Z-OS sandbox. For 24/7 access, deploy the [web app](https://github.com/UIoperationl/z-os-computer-web) to Vercel and update the URL in the app.
 
             ## Built
             Commit: ${{ github.sha }}
