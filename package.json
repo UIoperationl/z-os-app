@@ -1,0 +1,8 @@
+{
+  "name": "z-os-app",
+  "version": "1.0.0",
+  "description": "Z-OS Computer — Android app",
+  "scripts": {
+    "build": "echo skip"
+  }
+}
