@@ -7,6 +7,7 @@ import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -28,7 +29,8 @@ import android.content.SharedPreferences;
 import android.widget.Toast;
 import android.net.Uri;
 import android.os.Environment;
-import java.io.File;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 public class MainActivity extends Activity {
 
@@ -38,6 +40,7 @@ public class MainActivity extends Activity {
     private SharedPreferences prefs;
 
     private static final String DEFAULT_URL = "https://preview-chat-8faf28d5-3f19-45cf-bd33-bdcf8ba3dcbc.space-z.ai/";
+    private static final int PERM_REQUEST = 1001;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,18 +48,13 @@ public class MainActivity extends Activity {
 
         prefs = getSharedPreferences("z-os", MODE_PRIVATE);
 
-        // Start foreground service to keep app alive in background
-        Intent serviceIntent = new Intent(this, BackgroundService.class);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(serviceIntent);
-        } else {
-            startService(serviceIntent);
-        }
+        // Request permissions (needed for downloads on Android 10+)
+        requestPermissions();
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
 
-        // Settings panel (URL changer)
+        // Settings panel (URL changer) - hidden by default
         settingsPanel = new LinearLayout(this);
         settingsPanel.setOrientation(LinearLayout.HORIZONTAL);
         settingsPanel.setPadding(8, 8, 8, 8);
@@ -116,11 +114,10 @@ public class MainActivity extends Activity {
 
         webView.setWebChromeClient(new WebChromeClient());
 
-        // DOWNLOAD LISTENER - handle file downloads properly
+        // DOWNLOAD LISTENER - handle file downloads via Android DownloadManager
         webView.setDownloadListener(new DownloadListener() {
             @Override
             public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
-                // Use Android's download manager to download the file
                 try {
                     android.app.DownloadManager.Request request = new android.app.DownloadManager.Request(Uri.parse(url));
                     request.setMimeType(mimetype != null ? mimetype : "*/*");
@@ -129,7 +126,7 @@ public class MainActivity extends Activity {
                     request.setAllowedOverRoaming(true);
                     request.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
 
-                    // Extract filename from content disposition or URL
+                    // Extract filename
                     String filename = "download";
                     if (contentDisposition != null && contentDisposition.contains("filename=")) {
                         String[] parts = contentDisposition.split("filename=");
@@ -149,8 +146,12 @@ public class MainActivity extends Activity {
                     Toast.makeText(MainActivity.this, "Downloading: " + filename, Toast.LENGTH_LONG).show();
                 } catch (Exception e) {
                     // Fallback: open in browser
-                    Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                    startActivity(i);
+                    try {
+                        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                        startActivity(i);
+                    } catch (Exception e2) {
+                        Toast.makeText(MainActivity.this, "Download failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
                 }
             }
         });
@@ -169,31 +170,42 @@ public class MainActivity extends Activity {
         String url = prefs.getString("url", DEFAULT_URL);
         webView.loadUrl(url);
 
-        // Keep screen on
+        // Keep screen on while app is visible
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
+
+    private void requestPermissions() {
+        // Only request permissions that are needed and not already granted
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 13+ - POST_NOTIFICATIONS
+            if (ContextCompat.checkSelfPermission(this, "android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{"android.permission.POST_NOTIFICATIONS"}, PERM_REQUEST);
+            }
+        }
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+            // Android 9 and below - need storage permission for downloads
+            if (ContextCompat.checkSelfPermission(this, "android.permission.WRITE_EXTERNAL_STORAGE") != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{"android.permission.WRITE_EXTERNAL_STORAGE"}, PERM_REQUEST);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        // Don't care about result - app works without permissions, just no downloads
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (webView != null) {
-            webView.onResume();
-        }
+        if (webView != null) webView.onResume();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        // Don't pause WebView - let JS keep running
-        // The foreground service keeps the app alive
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        // Stop foreground service
-        Intent serviceIntent = new Intent(this, BackgroundService.class);
-        stopService(serviceIntent);
+        // Don't pause WebView - let background JS continue
     }
 
     @Override
@@ -212,7 +224,7 @@ public class MainActivity extends Activity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) {
+        if (hasFocus && webView != null) {
             webView.setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                 | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
